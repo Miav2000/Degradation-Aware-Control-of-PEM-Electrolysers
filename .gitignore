@@ -1,0 +1,30 @@
+# Simulation outputs (auto-generated)
+results/
+logs/
+
+# Reference papers (copyrighted)
+Papers/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Package build artifacts
+*.egg-info/
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp

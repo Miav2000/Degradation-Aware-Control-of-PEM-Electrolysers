@@ -1,0 +1,16 @@
+# Lifetime aware controller configuration
+
+type: supervisory_optimizer
+
+# Upper bound on temperature in optimisation (not hard limit, but used to prevent unrealistic solutions). 
+T_max_K: 353.15   # 80 degC, overwrites T_max_K in plant_parameters.yaml
+
+objective:
+  include_degradation: true
+  use_rul_feedback:    true
+  rul_floor:           0.05    # floor remaining budget at 5% of V_EOL
+
+solver:
+  name: cobyqa
+  max_iter: 500
+  tol: 1.0e-4

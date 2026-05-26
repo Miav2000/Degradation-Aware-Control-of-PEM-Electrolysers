@@ -1,0 +1,17 @@
+# # Price aware controller configuration
+#
+# Same settings as the degradation-aware controller, but with include_degradation: false.
+# This isolates the effect of degradation-aware dispatch from pure economic optimisation.
+
+type: supervisory_optimizer
+
+# Upper bound on temperature in optimisation (not hard limit, but used to prevent unrealistic solutions). 
+T_max_K: 353.15   # 80 degC, overwrites T_max_K in plant_parameters.yaml
+
+objective:
+  include_degradation: false
+
+solver:
+  name: cobyqa
+  max_iter: 500
+  tol: 1.0e-4

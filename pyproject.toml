@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pemwe-model"
+version = "0.1.0"
+description = "PEM water electrolyzer system model with degradation-aware supervisory control"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "CC BY-NC 4.0" }
+authors = [{ name = "Mia Vesterager" }]
+
+dependencies = [
+  "numpy>=1.24.4",
+  "scipy>=1.10.1",
+  "pyyaml>=5.3",
+  "pandas>=2.0.3",
+  "matplotlib>=3.1.2",
+  "cobyqa>=1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.6",
+  "mypy>=1.8",
+  "pytest>=7.4",
+]
+
+[tool.setuptools]
+packages = ["pemwe"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

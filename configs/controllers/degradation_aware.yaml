@@ -1,0 +1,16 @@
+# Degradation aware controller configuration
+#
+# Controller-specific settings only
+
+type: supervisory_optimizer
+
+# Upper bound on temperature in optimisation (not hard limit, but used to prevent unrealistic solutions). 
+T_max_K: 353.15   # 80 degC, overwrites T_max_K in plant_parameters.yaml
+
+objective:
+  include_degradation: true
+
+solver:
+  name: cobyqa
+  max_iter: 500
+  tol: 1.0e-4

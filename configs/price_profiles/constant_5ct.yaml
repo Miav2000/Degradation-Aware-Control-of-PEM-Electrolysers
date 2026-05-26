@@ -1,0 +1,5 @@
+# constant_5ct.yaml — fixed electricity price at 5 ct/kWh
+
+price_profile:
+  type: constant
+  price_eur_per_kWh: 0.05

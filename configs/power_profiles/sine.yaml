@@ -1,0 +1,15 @@
+# sine.yaml — sinusoidal power availability (for thermal cycling tests)
+
+simulation:
+  dt_s: 1.0
+  t_end_s: 14400.0         # 4 hours — several thermal cycles
+  save_every: 1
+
+P_avail_profile:
+  type: sine
+  P_mean_W: 50000.0        # [W]  ~55% of rated stack power
+  P_amp_W: 30000.0          # [W]  range 20–80 kW
+  period_s: 1800.0           # [s]  30-min period
+  phase_rad: 0.0
+  P_min_W: 0.0               # clamp lower
+  P_max_W: 100000.0          # clamp upper

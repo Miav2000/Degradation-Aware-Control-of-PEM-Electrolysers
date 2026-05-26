@@ -1,0 +1,186 @@
+# plant_parameters.yaml
+
+# Edit the plant parameters here. The scripts in PEMWE_system_model/ will read these parameters 
+# The parameters are organised into blocks
+
+stack:
+  # Stack geometry from Nezhadkhatami et al. (2026) Table 1:
+  #   Nezhadkhatami: N_cells = 140, P_rating = 450 kW, P_min = 45 kW, I in [169, 2500] A, I_max=2500 A
+
+  N_cells: 140                  # [-]     Nezhadkhatami et al. (2026), Table 1
+  A_cell_m2: 0.0800             # [m^2]   800 cm^2, 140 cells and 450 kW rating
+  P_rating_W: 450000.0          # [W]     Nezhadkhatami et al. (2026), Table 1 - continuous rated power
+  P_min_frac: 0.10              # [-]     shutdown below 10% of P_rating (P_min = 45 kW) - Nezhadkhatami et al. (2026), Table 1
+  eta_F: 0.98                   # [-]     Faradaic efficiency
+
+  j_min_A_per_m2: 1500.0        # [A/m^2] 0.15 A/cm^2 -- minimum for gas crossover safety (~10% of rated)
+  j_max_A_per_m2: 20000.0       # [A/m^2] 2.0 A/cm^2 -- DOE 2022 operating point
+  T_min_K: 323.15               # [K] 50 degC, only for optimiser, not hard limit 
+  T_max_K: 353.15               # [K] 80 degC, only for optimiser, not hard limit (controllers/ overwrites this)
+
+  p_an_Pa: 5.0e5                # [Pa] Anode pressure
+  p_cath_Pa: 3.0e6              # [Pa] Cathode pressure
+  p_ref_Pa: 1.0e5               # [Pa] standard condition pressure
+
+electrochemistry:
+  F_C_per_mol: 96485.33212      # [C/mol] Faraday constant
+  R_J_per_molK: 8.314462618     # [J/(mol*K)] universal gas constant
+  n_e: 2                        # [-] electrons per mol H2
+
+  # Urev(T) at 1 bar: Urev(T) = a0 + a1*T + a2*T*ln(T) + a3*T^2
+  Urev_a0_V: 1.5184             # [V]
+  Urev_a1_V_per_K: -1.5421e-3   # [V/K]
+  Urev_a2_V_per_K: 9.523e-5     # [V/K]
+  Urev_a3_V_per_K2: 9.84e-8     # [V/K^2]
+
+  alpha_an: 0.5                   # [-] anodic charge transfer coefficient
+  alpha_cat: 0.5                  # [-] cathodic charge transfer coefficient
+
+fluids:
+  water:
+    cp_J_per_kgK: 4180.0        # [J/(kg*K)]
+
+    # DIPPR105 saturated liquid density: rho = A / B^(1 + (1 - T/C)^D)  [kg/m^3]
+    # Source: Dortmund Data Bank (DDB), CAS 7732-18-5, valid 273-648 K
+    rho_DIPPR105:
+      A: 0.14395
+      B: 0.0112
+      C: 649.727
+      D: 0.05107
+
+  hydrogen:
+    HHV_kWh_per_kg: 39.41       # [kWh/kg] higher heating value
+    LHV_kWh_per_kg: 33.33       # [kWh/kg] lower heating value
+
+  molar_masses:
+    H2_kg_per_mol: 2.01588e-3   # [kg/mol]
+    O2_kg_per_mol: 31.998e-3    # [kg/mol]
+    H2O_kg_per_mol: 18.01528e-3 # [kg/mol]
+
+  water_vapor:
+    # Antoine: log10(P_bar) = A - B/(T_K + C), valid 255.9-373 K (-17.2 to 99.9 degC)
+    # Source: Stull, 1947, via NIST Chemistry WebBook, SRD 69
+    antoine:
+      A: 4.6543
+      B: 1435.264
+      C: -64.848
+      bar_to_Pa: 1.0e5          # [Pa/bar]
+
+thermal:
+  # Lumped thermal capacity, scaled from Tiktak (2019) Table A.1:
+  #   Tiktak reference: 135.1 kJ/K for 100 cells, 1000 cm^2 active area
+  #   Formula (computed from stack geometry in properties block):
+  #     C_th = 135.1e3 * (N_cells / 100) * (A_cell_m2 * 1e4 / 1000)  [J/K]
+  #   Current geometry: 135.1e3 * (140/100) * (800/1000) = 151.3 kJ/K
+  C_th_ref_kJ_per_K: 135.1      # [kJ/K]  Tiktak reference (100 cells, 1000 cm^2)
+  T_amb_K: 298.15               # [K]  25 degC standard ambient
+
+  # Ambient heat loss: UA = (h_conv + h_rad) * A_surface
+  #   h_conv from Tiktak (2019): 14.55 W/(m^2*K) for slow-moving air
+  #   h_rad = 4 * emissivity * sigma * T_stack^3 
+  #   A_surface computed from stack geometry (N_cells, A_cell, cell thickness)
+  h_conv_W_per_m2K: 14.55       # [W/(m^2*K)] convection, Tiktak (2019)
+  emissivity: 0.6               # [-] surface emissivity (painted/oxidised metal)
+  sigma_W_per_m2K4: 5.67e-8     # [W/(m^2*K^4)] Stefan-Boltzmann constant
+  cell_thickness_m: 5.0e-3      # [m] ~5 mm per cell (MEA + bipolar plate + current collectors)
+  mem_thickness_cm: 175e-4       # [cm] membrane thickness (for ohmic overpotential calculation)
+
+  # Thermoneutral voltage at 25 degC 
+  U_tn_V: 1.48                  # [V] assumed constant for thermal calculations (variation with T is small)
+
+water_feed:
+  # Boundary conditions / supply
+  T_tank_K: 298.15              # [K]  make-up water temperature (25 degC)
+  T_set_K: 333.15               # [K]  heater setpoint (60 degC) -- preheat mix to this if below
+
+  # No-starvation and physical bounds
+  lambda_min: 20.0               # [-] minimum stoichiometric excess to avoid starvation (PEMWE book sufficient hydration)
+  m_dot_max_kg_s: 3.5           # [kg/s]
+
+  # Actuator dynamics   (with 40 substeps, this is neglicble but included for completeness and future use)
+  tau_flow_s: 2.0               # [s]
+  dm_dot_max_kg_s2: 0.05        # [kg/s^2]
+
+degradation:
+  # POLYNOMIAL SHAPE: quadratic in j, extracted from Tejera (2024) Fig. 3.1
+  #   by subtracting the Stage 0 J-V curve from the 3*168 h J-V curve
+  #   (same procedure as Nezhadkhatami Section 2.1, their Eq. 6).
+  #   Source polynomial shape: dV ~ 37.4*J^2 + 0.779*J + 0.0017, J in A/cm^2.
+  #   Quadratic J^2 term dominates at commercial current densities.
+  #
+  # MAGNITUDE CALIBRATION: Thummalacherla & Bhattacharya, "Development of
+  #   degradation cost models for electrolyzers and fuel cells considering
+  #   megawatt-scale applications." Representative dynamic degradation rate
+  #   (DDR) for dynamic operation: 9.6 uV/h at j = 2.0 A/cm^2.
+  #
+  #   Calibration: scale Tejera shape polynomial so that at j = 20 000 A/m^2
+  #   (2.0 A/cm^2), T = 60 degC (f_T = 1), the rate equals 9.6 uV/h.
+  #
+  #   shape_ref = a*j_ref^2 + b*j_ref + c
+  #   k         = DDR_ref*1e-6 / shape_ref
+  #   alpha_V   = k * a / 1e8   [V*m^4/(A^2*h)]
+  #   beta_V    = k * b / 1e4   [V*m^2/(A*h)]
+  #   gamma_V   = k * c         [V/h]
+
+  # Polynomial shape coefficients from Nezhadkhatami (2026) Fig. 1, J in A/cm^2:
+  #   dV_deg/dt = a*J^2 + b*J + c  (shape only; magnitude set by DDR_ref below)
+  poly_a_V_per_Acm2_sq: 37.4      # [V/(A/cm^2)^2]
+  poly_b_V_per_Acm2:     0.779    # [V/(A/cm^2)]
+  poly_c_V:              0.0017   # [V]
+
+  # Reference dynamic degradation rate (Thummalacherla & Bhattacharya 2026):
+  DDR_ref_uV_per_h: 9.6           # [uV/h]  at j_ref and T_ref  <- tune to change magnitude
+  j_ref_A_per_cm2:  2.0           # [A/cm^2]  calibration current density
+
+  # Arrhenius temperature correction
+  Ea_eff_J_per_mol: 55000.0      # [J/mol]  effective Ea
+  T_ref_K:          333.15       # [K]      60 degC reference temperature
+
+  # EOL criterion
+  V_deg_EOL_V: 0.10              # [V]  100 mV -- Nezhadkhatami et al. (2026), Table 1
+
+
+economics:
+  # Stack replacement CAPEX -- derived from DOE 2022 specific cost.
+  # CAPEX [EUR] = capex_usd_per_kW * P_rating_kW * eur_per_usd
+  # Reference: DOE "Technical Targets for PEM Electrolysis" (2022).
+  capex_usd_per_kW: 450.0       # [$/kW]   DOE 2022 Status -- stack capital cost (replacement)
+  eur_per_usd: 0.87             # [EUR/$]  EUR/USD exchange rate
+  p_H2_eur_per_kg: 6.0          # [EUR/kg] H2 selling price, Nezhadkhatami et al. (2026)
+  c_shutdown_eur: 50.0           # [EUR/event] lumped shutdown+startup penalty per event, Nezhadkhatami et al. (2026)
+  # System CAPEX -- one-time, amortised over system lifetime
+  system_capex_eur_per_kW: 700.0   # [EUR/kW]  BOP + installation (initial investment)
+  system_lifetime_yr: 20.0         # [yr]      Expected lifetime of BoP
+  wacc: 0.07                       # [-]       weighted average cost of capital (7%), used for discounting future costs and revenues to compute NPV
+                                
+
+auxiliaries:
+  aux_margin_frac: 0.10         # [-]  10% margin on P_rating for auxiliaries (wind scaling)
+
+  pump:
+    eta: 0.7                    # [-] pump efficiency (electrical to hydraulic power conversion)
+    dp_Pa: 2.0e5                # [Pa] Assumed pressure drop in water loop
+
+  cooler:
+    COP: 3.0                    # [-] coefficient of performance 
+                                # typical air-cooled plate HX with fan: COP 3-5
+
+  heater:
+    eta: 1.0                    # [-] electric heater efficiency (resistive heating)
+
+  dryer:  #dehumidifier for cathode outlet gas stream
+    T_out_K: 298.15             # [K] condenser outlet temperature (25 degC), may be optimisitc, but has little influence.
+    COP: 2.5                    # [-] coefficient of performance
+    h_fg_J_per_kg: 2.4e6        # [J/kg] latent heat of water vaporization
+    cp_gas_J_per_kgK: 14000.0   # [J/(kg*K)] specific heat of H2 gas 
+
+fast_control:
+  n_substeps: 60                    # [-] simulation sub-steps per hour (60 s each at dt=3600 s)
+  n_preview_substeps: 20            # [-] optimizer preview sub-steps (coarser for speed, and realistic mismatch between real stack and simulated stack)
+
+  # P temperature controller — cooling regime (T_stack > T_w_in: more flow cools)
+  Kp_cool_kg_s_per_K:  0.50        # [kg/s/K]     proportional cooling gain
+
+  # P temperature controller — heating regime (T_stack < T_w_in: more flow heats)
+  Kp_heat_kg_s_per_K:  0.05        # [kg/s/K]     proportional heating gain
+

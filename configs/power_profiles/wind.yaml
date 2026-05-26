@@ -1,0 +1,15 @@
+# wind.yaml — Danish offshore wind power profile (2025)
+#
+# Raw data source: Energinet EnergyReport (HourDK, OffshoreWindGe100MW_MWhDK1)
+# Preprocessed by: configs/power_profiles/energinet_wind_price_data/preprocess_energinet.py
+
+simulation:
+  dt_s: 3600.0              # [s] supervisory control interval (matches hourly Energinet data)
+  t_end_s: 31536000.0       # 8760 h = full year (365 × 24 × 3600)
+  save_every: 1             # save every step (hourly resolution)
+
+P_avail_profile:
+  type: file
+  path: configs/power_profiles/energinet_wind_price_data/wind_power.csv
+  time_col: t_s
+  power_col: P_W

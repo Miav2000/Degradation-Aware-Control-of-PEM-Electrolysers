@@ -1,0 +1,15 @@
+# Load following controller configuration
+#
+# The electrolyzer follows available renewable power
+# without price-based dispatch or degradation awareness.
+#
+# Controller-specific settings only.
+
+
+type: commercial_rule_based
+
+setpoints:
+  T_target_K: 333.15            # [K] 60 degC - preferred stack operating temperature
+
+load_following:
+  V_ref_cell_V: 1.70            # [V] reference cell voltage for j estimate from P_avail

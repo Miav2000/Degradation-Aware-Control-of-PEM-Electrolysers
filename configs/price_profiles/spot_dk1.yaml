@@ -1,0 +1,10 @@
+# spot_dk1.yaml — Energinet DK1 spot prices (2025)
+#
+# Raw data source: Energinet EnergyReport (DK1_EUR/MWh)
+# Preprocessed by: configs/power_profiles/energinet_wind_price_data/preprocess_energinet.py
+
+price_profile:
+  type: file
+  path: configs/power_profiles/energinet_wind_price_data/spot_price.csv
+  time_col: t_s
+  price_col: price_eur_per_kWh
