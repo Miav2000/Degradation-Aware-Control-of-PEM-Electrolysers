@@ -25,7 +25,7 @@ Usage:
   python3 run/sensitivity/lifetime_5yr.py --plots-only
 
 To run all four in parallel (4 cores):
-  cd /home/ubuntu/PEMWE_system_model
+  cd PEMWE_system_model
   for c in commercial cost_optimal aware aware_rul; do
     nohup python3 run/sensitivity/lifetime_5yr.py --controller $c \
       > /tmp/lt5yr_$c.log 2>&1 &
