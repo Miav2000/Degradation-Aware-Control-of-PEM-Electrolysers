@@ -1180,7 +1180,7 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     axes[0,0].axvline(ja.mean(), color=ORANGE, lw=1.5, ls="--", alpha=0.9)
     if de is not None:
         axes[0,0].axvline(je.mean(), color=PURPLE, lw=1.5, ls=":", alpha=1.0)
-    axes[0,0].set_xlabel(r"$j$ [A/cm$^2$]"); axes[0,0].set_ylabel("Density")
+    axes[0,0].set_xlabel(r"$j$ [A/cm$^2$]"); axes[0,0].set_ylabel("Frequency density [-]")
     axes[0,0].set_title("Current Density --- All Hours")
     axes[0,0].legend(loc="upper right")
 
@@ -1208,7 +1208,7 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     axes[0,1].axvline(Ta.mean(), color=ORANGE, lw=1.5, ls="--", alpha=0.9)
     if de is not None:
         axes[0,1].axvline(Te.mean(), color=PURPLE, lw=1.5, ls=":", alpha=1.0)
-    axes[0,1].set_xlabel(r"$T$ [$^\circ$C]"); axes[0,1].set_ylabel("Density")
+    axes[0,1].set_xlabel(r"$T$ [$^\circ$C]"); axes[0,1].set_ylabel("Frequency density [-]")
     axes[0,1].set_title("Stack Temperature --- All Hours")
     axes[0,1].legend(loc="upper right")
 
@@ -1236,7 +1236,7 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     axes[0,2].axvline(ra_all.mean(), color=ORANGE, lw=1.5, ls="--", alpha=0.9)
     if de is not None:
         axes[0,2].axvline(re_all.mean(), color=PURPLE, lw=1.5, ls=":", alpha=1.0)
-    axes[0,2].set_xlabel(r"$\dot{V}_\mathrm{deg}$ [$\mu$V/h]"); axes[0,2].set_ylabel("Density")
+    axes[0,2].set_xlabel(r"$\dot{V}_\mathrm{deg}$ [$\mu$V/h]"); axes[0,2].set_ylabel("Frequency density [-]")
     axes[0,2].set_title("Degradation Rate --- All Hours")
     axes[0,2].legend(loc="upper right")
 
@@ -1259,7 +1259,7 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     axes[1,0].axvline(ja_a.mean(), color=ORANGE, lw=1.5, ls="--", alpha=0.9)
     if de is not None:
         axes[1,0].axvline(je_a.mean(), color=PURPLE, lw=1.5, ls=":", alpha=1.0)
-    axes[1,0].set_xlabel(r"$j$ [A/cm$^2$]"); axes[1,0].set_ylabel("Density")
+    axes[1,0].set_xlabel(r"$j$ [A/cm$^2$]"); axes[1,0].set_ylabel("Frequency density [-]")
     axes[1,0].set_title("Current Density --- Active Hours")
     axes[1,0].legend(loc="upper right")
 
@@ -1287,7 +1287,7 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     axes[1,1].axvline(Ta_a.mean(), color=ORANGE, lw=1.5, ls="--", alpha=0.9)
     if de is not None:
         axes[1,1].axvline(Te_a.mean(), color=PURPLE, lw=1.5, ls=":", alpha=1.0)
-    axes[1,1].set_xlabel(r"$T$ [$^\circ$C]"); axes[1,1].set_ylabel("Density")
+    axes[1,1].set_xlabel(r"$T$ [$^\circ$C]"); axes[1,1].set_ylabel("Frequency density [-]")
     axes[1,1].set_title("Stack Temperature --- Active Hours")
     axes[1,1].legend(loc="upper right")
 
@@ -1307,7 +1307,7 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     axes[1,2].axvline(ra.mean(), color=ORANGE, lw=1.5, ls="--", alpha=0.9)
     if de is not None:
         axes[1,2].axvline(re.mean(), color=PURPLE, lw=1.5, ls=":", alpha=1.0)
-    axes[1,2].set_xlabel(r"$\dot{V}_\mathrm{deg}$ [$\mu$V/h]"); axes[1,2].set_ylabel("Density")
+    axes[1,2].set_xlabel(r"$\dot{V}_\mathrm{deg}$ [$\mu$V/h]"); axes[1,2].set_ylabel("Frequency density [-]")
     axes[1,2].set_title("Degradation Rate --- Active Hours")
     axes[1,2].legend(loc="upper right")
 
