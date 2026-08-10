@@ -146,7 +146,15 @@ The 1-year wind and price data is automatically tiled to fill the full requested
 ```bash
 python3 run/sensitivity/monte_carlo.py
 ```
-Runs matched samples with uniform sampling-
+Varies five techno-economic parameters simultaneously (electricity price, stack CAPEX, WACC, H₂ price, degradation rate). Run each controller separately; shared sample IDs ensure a fair cross-controller comparison:
+```bash
+python3 run/sensitivity/monte_carlo.py --controller LF --samples 1000 --workers 4
+python3 run/sensitivity/monte_carlo.py --controller PA --samples 1000 --workers 4
+python3 run/sensitivity/monte_carlo.py --controller DA --samples 1000 --workers 4
+python3 run/sensitivity/monte_carlo.py --controller LA --samples 1000 --workers 4
+# Cross-controller comparison figures (after all four complete):
+python3 run/sensitivity/monte_carlo.py --compare
+```
 
 ### Run everything at once
 
