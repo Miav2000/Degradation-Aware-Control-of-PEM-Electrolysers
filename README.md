@@ -136,10 +136,17 @@ The 1-year wind and price data is automatically tiled to fill the full requested
 
 | Make target | What it does |
 |---|---|
-| `make sensitivity_fixed_T_5yr` | Fixed operating temperature (7 cases, 55–70 °C) |
+| `make sensitivity_fixed_T_5yr` | Fixed operating temperature Pareto frontier (8 cases, 56–70 °C, 3 Ea values) |
+| `make sensitivity_optimizer` | Compare optimizer solvers (COBYQA vs alternatives) |
 | `make sensitivity_substeps` | Effect of optimizer substep resolution |
 | `make sensitivity_tornado` | Tornado chart: LCOH sensitivity to key parameters |
 | `make sensitivity_temp_decomp` | Decompose degradation into current-density vs temperature contribution |
+
+**Monte Carlo sensitivity** (not in Makefile — run directly):
+```bash
+python3 run/sensitivity/monte_carlo.py
+```
+Runs matched samples with uniform sampling-
 
 ### Run everything at once
 
@@ -175,7 +182,9 @@ PEMWE_system_model/
 │   ├── comparison_simulation.py       # Run and compare all four controllers
 │   ├── make_plots.py                  # Generate comparison figures from CSVs
 │   ├── plot_style.py                  # Shared figure style
+│   ├── comparison_lcoh_relative.py    # LCOH relative comparison figure (vs DA baseline)
 │   ├── sensitivity/                   # All sensitivity and multi-year studies
+│   │   └── monte_carlo.py             # Monte Carlo sensitivity (N=361 matched samples)
 │   └── validation/                    # Electrochemistry and thermal validation scripts
 │
 ├── results/                           # Auto-generated (created on first run)

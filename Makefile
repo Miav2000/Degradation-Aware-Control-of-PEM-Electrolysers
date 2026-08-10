@@ -238,8 +238,8 @@ sensitivity_fixed_T:
 sensitivity_fixed_T_5yr:
 	$(CLEAR_CACHE)
 	@rm -rf results/sensitivity_fixed_T_5yr
-	@echo "Launching 7 fixed-T 5yr simulations in parallel (nohup)..."
-	@for T in 55 57.5 60 62.5 65 67.5 70; do \
+	@echo "Launching 8 fixed-T 5yr simulations in parallel (nohup)..."
+	@for T in 56 58 60 62 64 66 68 70; do \
 		nohup bash -c "echo 'START fixedT_'$$T'C: '$$(date -u +%Y-%m-%dT%H:%M:%S); \
 			time $(PYTHON) run/sensitivity/sensitivity_fixed_T_pareto.py --run --only-T $$T; \
 			echo 'END fixedT_'$$T'C: '$$(date -u +%Y-%m-%dT%H:%M:%S)" \
