@@ -275,7 +275,7 @@ def build_state(
     F    = float(ec["F_C_per_mol"])
     n_e  = float(ec["n_e"])
     M_H2O = float(mm["H2O_kg_per_mol"])
-    lam   = float(wf["lambda_min"])
+    lam   = float(wf["nu_w"])
     n_H2  = N_cells * (j_prev * A_cell) / (n_e * F)
     m_prev = lam * n_H2 * M_H2O
 

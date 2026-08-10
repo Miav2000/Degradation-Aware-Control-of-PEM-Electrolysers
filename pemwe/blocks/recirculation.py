@@ -38,10 +38,10 @@ def min_water_feed_kg_s(j_A_per_m2: float, plant: Dict[str, Any]) -> float:
     """
     Minimum stoichiometric water feed for the full stack [kg/s].
 
-        m_dot_min = lambda_min * N_cells * (j * A_cell) / (n_e * F) * M_H2O
+        m_dot_min = nu_w * N_cells * (j * A_cell) / (n_e * F) * M_H2O
 
     This is the lower bound on the commanded flow passed to water_management_step.
-    lambda_min ensures sufficient water supply without starvation.
+    nu_w (excess water ratio multiplier) ensures sufficient water supply without starvation.
     """
     ec  = plant["electrochemistry"]
     wf  = plant["water_feed"]
@@ -51,9 +51,9 @@ def min_water_feed_kg_s(j_A_per_m2: float, plant: Dict[str, Any]) -> float:
     N_cells  = int(plant["stack"]["N_cells"])
     A_cell   = float(plant["stack"]["A_cell_m2"])
     M_H2O    = float(mm["H2O_kg_per_mol"])
-    lambda_min = float(wf["lambda_min"])
+    nu_w      = float(wf["nu_w"])
     n_dot_H2O = N_cells * (float(j_A_per_m2) * A_cell) / (n_e * F)
-    return lambda_min * n_dot_H2O * M_H2O
+    return nu_w * n_dot_H2O * M_H2O
 
 
 @dataclass(frozen=True)

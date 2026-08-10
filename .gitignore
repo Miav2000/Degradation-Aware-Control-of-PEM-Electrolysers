@@ -24,6 +24,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# nohup output
+nohup.out
+
 # Editor files
 .vscode/
 .idea/

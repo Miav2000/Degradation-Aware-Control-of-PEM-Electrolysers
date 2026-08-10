@@ -2,40 +2,40 @@
 sensitivity_fixed_T_pareto.py
 ==============================
 
-Tests whether the aware controller's dynamic temperature management genuinely
-outperforms simpler fixed-setpoint policies on the profit-vs-degradation Pareto
-frontier.
+Quantifies the value of dynamic temperature optimisation: does jointly
+optimising (j, T) outperform the simpler approach of optimising j alone at
+a fixed temperature setpoint?
 
-For each fixed temperature T ∈ {50, 52.5, 55, 57.5, 60, 62.5, 65, 67.5, 70}°C, a
-degradation-aware j-optimizer runs with T pinned (T_fixed_K in ctrl_cfg).
-This represents the literature state of the art: include degradation in the j
-objective, but do not co-optimise temperature.
+A degradation-aware j-optimiser is run at fixed T ∈ {56, 58, 60, 62, 64, 66, 68,
+70}°C. If the full aware controllers (which co-optimise temperature) lie beyond
+the Pareto frontier of this fixed-T sweep in LCOH vs. lifetime space, dynamic
+temperature management adds irreplaceable value. If they cluster near a fixed-T
+point, a simpler setpoint policy would suffice.
 
-The four existing controllers (commercial, cost_optimal, aware, aware_rul) are
-loaded from pre-computed CSVs and added to the same plot. A 5 year simulation is chosen for comparison,
-to also see the effect of accumulated degrdation, which Lifetime-aware should mitigate better than Degradation-aware.
-
-If the aware controller lies on the Pareto frontier — strictly better profit
-AND strictly less degradation than every fixed-T policy — then dynamic
-temperature variation adds value that no single setpoint can replicate.
-If it merely clusters near a fixed temperature point, a simpler fixed-T policy would
-suffice.
+The analysis is repeated for Ea_eff = 26, 55, and 70 kJ/mol to test whether
+the conclusion holds regardless of how temperature-sensitive degradation is.
 
 Usage
 -----
-Run all fixed-T simulations:
+Run new Ea=26 and Ea=70 simulations (Ea=55 cached, will be skipped):
     python3 run/sensitivity/sensitivity_fixed_T_pareto.py --run
 
 Plot only (after simulations are done):
     python3 run/sensitivity/sensitivity_fixed_T_pareto.py --plots-only
 
-Run a single temperature (useful for parallelism):
-    python3 run/sensitivity/sensitivity_fixed_T_pareto.py --run --only-T 60
+Run a specific Ea value and/or a single temperature:
+    python3 run/sensitivity/sensitivity_fixed_T_pareto.py --run --ea 26
+    python3 run/sensitivity/sensitivity_fixed_T_pareto.py --run --ea 70 --only-T 60
 
 Output
 ------
-    results/sensitivity_fixed_T/fixedT_XXC/fixedT_XXC.csv   (one per T)
-    results/sensitivity_fixed_T_pareto.png
+    results/sensitivity_fixed_T_5yr/fixedT_XXC/fixedT_XXC.csv        (Ea=55, existing)
+    results/sensitivity_fixed_T_5yr_Ea26/fixedT_XXC/fixedT_XXC.csv   (Ea=26, new)
+    results/sensitivity_fixed_T_5yr_Ea70/fixedT_XXC/fixedT_XXC.csv   (Ea=70, new)
+    results/sensitivity_fixed_T_pareto_5yr.pdf/.png         (Ea=55 figure)
+    results/sensitivity_fixed_T_pareto_5yr_Ea26.pdf/.png    (Ea=26 figure)
+    results/sensitivity_fixed_T_pareto_5yr_Ea70.pdf/.png    (Ea=70 figure)
+    results/sensitivity_fixed_T_Ea_comparison_table.tex     (LaTeX comparison table)
 """
 
 from __future__ import annotations
@@ -59,7 +59,10 @@ from pemwe.simulation import run_simulation
 # Configuration
 # ---------------------------------------------------------------------------
 
-FIXED_T_DEGC = [55, 57.5, 60, 62.5, 65, 67.5, 70]   # °C
+FIXED_T_DEGC = [56, 58, 60, 62, 64, 66, 68, 70]   # °C
+
+# Activation energy cases [kJ/mol]. 55 = base (existing CSVs); 26 and 70 are new.
+EA_CASES = [26, 55, 70]
 
 N_YEARS      = 5
 HOURS_PER_YR = 8760
@@ -79,28 +82,48 @@ _WACC           = float(_plant_econ.get("wacc", 0.0))
 _ANNUITY        = (1 - (1 + _WACC) ** -_SYS_LIFE_YR) / _WACC if _WACC > 0 else _SYS_LIFE_YR
 _STACK_REPL_EUR = float(_plant_econ["capex_usd_per_kW"]) * float(_plant_econ["eur_per_usd"]) * _P_RATED_KW
 
+# Ea=55 base output directory (existing results live here)
 OUT_BASE = REPO_ROOT / "results" / "sensitivity_fixed_T_5yr"
 
 # Existing controller CSVs (pre-computed 5-year runs)
 EXISTING = {
-    "Load-following":   REPO_ROOT / "results" / "lifetime_5yr" / "load_following_5yr"   / "load_following_5yr.csv",
-    "Price-aware": REPO_ROOT / "results" / "lifetime_5yr" / "price_aware_5yr" / "price_aware_5yr.csv",
-    "Degradation-aware":        REPO_ROOT / "results" / "lifetime_5yr" / "degradation_aware_5yr"        / "degradation_aware_5yr.csv",
+    "Load-following":    REPO_ROOT / "results" / "lifetime_5yr" / "load_following_5yr"    / "load_following_5yr.csv",
+    "Price-aware":       REPO_ROOT / "results" / "lifetime_5yr" / "price_aware_5yr"       / "price_aware_5yr.csv",
+    "Degradation-aware": REPO_ROOT / "results" / "lifetime_5yr" / "degradation_aware_5yr" / "degradation_aware_5yr.csv",
     "Lifetime-aware":    REPO_ROOT / "results" / "lifetime_5yr" / "lifetime_aware_5yr"    / "lifetime_aware_5yr.csv",
 }
 
 EXISTING_COLORS = {
-    "Load-following":    "#2C73D2",   # BLUE
-    "Price-aware":       "#44BBA4",   # GREEN
-    "Degradation-aware": "#FF6B35",   # ORANGE
-    "Lifetime-aware":    "#7B2D8B",   # PURPLE
+    "Load-following":    "#2C73D2",
+    "Price-aware":       "#44BBA4",
+    "Degradation-aware": "#FF6B35",
+    "Lifetime-aware":    "#7B2D8B",
 }
 EXISTING_MARKERS = {
     "Load-following":   "s",
-    "Price-aware": "D",
-    "Degradation-aware":        "*",
-    "Lifetime-aware":    "P",
+    "Price-aware":      "D",
+    "Degradation-aware": "*",
+    "Lifetime-aware":   "P",
 }
+
+
+# ---------------------------------------------------------------------------
+# Ea helpers
+# ---------------------------------------------------------------------------
+
+def _out_base(ea_kJ: float) -> Path:
+    """Output directory for a given Ea value."""
+    if ea_kJ == 55:
+        return OUT_BASE
+    return REPO_ROOT / "results" / f"sensitivity_fixed_T_5yr_Ea{ea_kJ:g}"
+
+
+def _apply_ea(base_plant: dict, ea_kJ: float) -> dict:
+    """Return a deep copy of plant with Ea_eff_J_per_mol overridden."""
+    p = copy.deepcopy(base_plant)
+    p["degradation"]["Ea_eff_J_per_mol"] = ea_kJ * 1e3
+    return p
+
 
 # ---------------------------------------------------------------------------
 # Helper: build ctrl_cfg for a fixed-T deg-aware run
@@ -137,13 +160,12 @@ def kpis(csv_path: Path) -> dict:
     profit        = df["true_profit_eur_h"].sum() * dt_h
     annual_profit = profit / N_YEARS
     vdeg_mV       = df["V_deg_V"].iloc[-1] * 1e3
-    deg_rate      = df["dV_deg_V"].sum() / n_steps   # cumulative rate, robust to EOL resets
-    lifetime_yr   = (0.1 / deg_rate / 8760.0) if deg_rate > 0 else float("inf")  # first stack only
+    deg_rate      = df["dV_deg_V"].sum() / n_steps
+    lifetime_yr   = (0.1 / deg_rate / 8760.0) if deg_rate > 0 else float("inf")
     total_H2      = (df["m_dot_H2_kg_h"] * dt_h).sum()
     H2_per_yr     = total_H2 / N_YEARS
     total_cost    = ((df["c_elec_eur_h"]) * dt_h + df["c_shutdown_eur"]).sum()
     h2_annual     = total_H2 / N_YEARS
-    # NPV-discounted replacement cost (Eq. 20)
     if lifetime_yr > 0 and np.isfinite(lifetime_yr) and h2_annual > 0:
         times = np.arange(lifetime_yr, _SYS_LIFE_YR + lifetime_yr, lifetime_yr)
         times = times[times <= _SYS_LIFE_YR]
@@ -166,18 +188,17 @@ def kpis(csv_path: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 def _tile_profile(values: list, n: int) -> list:
-    """Tile a 1-year profile to n steps, wrapping as needed."""
     arr   = np.array(values)
     valid = arr[~np.isnan(arr)]
     reps  = (n // len(valid)) + 1
     return np.tile(valid, reps)[:n].tolist()
 
 
-def run_fixed_T(T_degC: float, plant: dict, power_cfg: dict, price_cfg: dict) -> Path:
-    T_K   = T_degC + 273.15
-    # Use 1 decimal place in name only when needed (avoids "fixedT_52C" vs "fixedT_52.5C")
-    name  = f"fixedT_{T_degC:g}C"
-    outdir = OUT_BASE / name
+def run_fixed_T(T_degC: float, plant: dict, power_cfg: dict, price_cfg: dict,
+                out_base: Path) -> Path:
+    T_K      = T_degC + 273.15
+    name     = f"fixedT_{T_degC:g}C"
+    outdir   = out_base / name
     csv_path = outdir / f"{name}.csv"
 
     if csv_path.exists():
@@ -186,7 +207,6 @@ def run_fixed_T(T_degC: float, plant: dict, power_cfg: dict, price_cfg: dict) ->
 
     print(f"  [run]  {name}  (T_target = {T_degC:g} °C, {N_YEARS} years) ...")
 
-    # Build tiled 5-year profiles
     from run.single_simulation import load_power_profile, load_price_profile
     p_1yr   = load_power_profile(power_cfg, HOURS_PER_YR, DT_S, REPO_ROOT)
     pr_1yr  = load_price_profile(price_cfg, HOURS_PER_YR, REPO_ROOT)
@@ -214,11 +234,53 @@ def run_fixed_T(T_degC: float, plant: dict, power_cfg: dict, price_cfg: dict) ->
 
 
 # ---------------------------------------------------------------------------
+# Run a DA joint (j+T) simulation for a non-base Ea value
+# ---------------------------------------------------------------------------
+
+def run_joint_da(plant: dict, power_cfg: dict, price_cfg: dict,
+                 out_base: Path) -> Path:
+    """Run DA with joint j+T optimisation at a modified Ea and save results."""
+    name     = "joint_da"
+    outdir   = out_base / name
+    csv_path = outdir / f"{name}.csv"
+
+    if csv_path.exists():
+        print(f"  [skip] {name} — CSV already exists")
+        return csv_path
+
+    print(f"  [run]  {name}  (joint j+T, {N_YEARS} years) ...")
+
+    from run.single_simulation import load_power_profile, load_price_profile
+    p_1yr   = load_power_profile(power_cfg, HOURS_PER_YR, DT_S, REPO_ROOT)
+    pr_1yr  = load_price_profile(price_cfg, HOURS_PER_YR, REPO_ROOT)
+    p_avail = _tile_profile(p_1yr,  N_STEPS)
+    price   = _tile_profile(pr_1yr, N_STEPS)
+
+    ctrl_cfg = load_config(REPO_ROOT / "configs" / "controllers" / "degradation_aware.yaml")
+
+    df = run_simulation(
+        price_series=price,
+        p_avail_series=p_avail,
+        plant=plant,
+        ctrl_cfg=ctrl_cfg,
+        dt_s=DT_S,
+        detail_window_h=(2386, 2396),
+    )
+
+    outdir.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_path, index=False)
+
+    k = kpis(csv_path)
+    print(f"    profit={k['profit']:+.0f} EUR  V_deg={k['vdeg_mV']:.2f} mV  "
+          f"T_mean={k['T_mean_C']:.1f} °C  j_mean={k['j_mean']:.0f} A/m2")
+    return csv_path
+
+
+# ---------------------------------------------------------------------------
 # Pareto helpers
 # ---------------------------------------------------------------------------
 
 def is_pareto_efficient(profits: np.ndarray, vdegs: np.ndarray) -> np.ndarray:
-    """Return boolean mask of Pareto-efficient points (max profit, min vdeg)."""
     n = len(profits)
     dominated = np.zeros(n, dtype=bool)
     for i in range(n):
@@ -233,32 +295,26 @@ def is_pareto_efficient(profits: np.ndarray, vdegs: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# Figure
+# Figure (per Ea)
 # ---------------------------------------------------------------------------
 
 _COL_REF = "#6C757D"
-_COL_LEG = "#9E9E9E"   # neutral grey used for all legend marker fills
+_COL_LEG = "#9E9E9E"
 
-# Named-controller marker shapes (colour and size set at plot time)
 _CTRL_MARKER = {
-    "Load-following":   dict(marker="s", zorder=5, label="Load-following"),
-    "Price-aware": dict(marker="D", zorder=5, label="Price-aware"),
-    "Degradation-aware":        dict(marker="*", zorder=6, label=r"Degradation-aware"),
+    "Load-following":    dict(marker="s", zorder=5, label="Load-following"),
+    "Price-aware":       dict(marker="D", zorder=5, label="Price-aware"),
+    "Degradation-aware": dict(marker="*", zorder=6, label=r"Degradation-aware"),
     "Lifetime-aware":    dict(marker="P", zorder=5, label="Lifetime-aware"),
 }
 
-# Three-level j size encoding — thresholds sit in the natural gaps of the data
-# Low  : j < 0.36  →  fixed-T high-T cases only   (0.33–0.34 A/cm²)
-# Med  : 0.36–0.60 →  aware, fixed-T low-T, cost-optimal (0.38–0.46 A/cm²)
-# High : j > 0.60  →  commercial only              (0.71 A/cm²)
-_J_LOW   = 0.36
-_J_HIGH  = 0.60
+_J_LOW     = 0.36
+_J_HIGH    = 0.60
 _SZ_SMALL  = 55
 _SZ_MEDIUM = 145
 _SZ_LARGE  = 340
 
 def _j_size(j_cm2: float, star: bool = False) -> float:
-    """Map j [A/cm²] to one of three discrete marker areas."""
     if j_cm2 < _J_LOW:
         s = _SZ_SMALL
     elif j_cm2 > _J_HIGH:
@@ -267,17 +323,15 @@ def _j_size(j_cm2: float, star: bool = False) -> float:
         s = _SZ_MEDIUM
     return s * 2.2 if star else s
 
-# Shared colormap: T_set for fixed-T circles, T_run for named controllers
 _T_NORM_MIN = 55.0
 _T_NORM_MAX = 70.0
 
 
 def _make_figure(fixed_T_results: list, existing_results: dict,
-                 x_metric: str = "lcoh") -> None:
+                 ea_kJ: float, x_metric: str = "lcoh") -> None:
     """
-    x_metric : "lcoh"   → LCOH [€/kg H₂]                    (field-standard)
-               "h2"     → Mean annual H₂ production [t/yr]  (physical)
-               "profit" → Mean annual profit [k€/yr]         (economic)
+    Pareto figure for one Ea value.
+    ea_kJ  : activation energy [kJ/mol] — used for filename and subtitle.
     """
     import matplotlib
     matplotlib.use("Agg")
@@ -299,7 +353,6 @@ def _make_figure(fixed_T_results: list, existing_results: dict,
 
     fig, ax = plt.subplots(figsize=(6.8, 5.2))
 
-    # ── Build x values ────────────────────────────────────────────────────────
     def _xval(r):
         if x_metric == "lcoh":   return r["lcoh"]
         if x_metric == "h2":     return r["H2_per_yr"] / 1e3
@@ -307,7 +360,7 @@ def _make_figure(fixed_T_results: list, existing_results: dict,
 
     if x_metric == "lcoh":
         xlabel   = r"LCOH [\euro/kg$_{\mathrm{H_2}}$]"
-        x_invert = True    # lower LCOH is better → invert so "better" is right
+        x_invert = True
     elif x_metric == "h2":
         xlabel   = r"Mean annual H$_2$ production [t/yr]"
         x_invert = False
@@ -315,24 +368,19 @@ def _make_figure(fixed_T_results: list, existing_results: dict,
         xlabel   = r"Mean annual profit [k\euro/yr]"
         x_invert = False
 
-    # ── Fixed-T circles: colour = T_set, size = j_run ────────────────────────
     Ts  = np.array([r["T_set_C"]     for r in fixed_T_results])
-    js  = np.array([r["j_mean"]       for r in fixed_T_results]) / 1e4   # A/cm²
+    js  = np.array([r["j_mean"]       for r in fixed_T_results]) / 1e4
     lts = np.array([r["lifetime_yr"] for r in fixed_T_results])
     xs  = np.array([_xval(r)         for r in fixed_T_results])
 
     sizes = np.array([_j_size(j) for j in js])
 
-    # Scatter — no legend entries (all proxies are explicit below)
     sc = ax.scatter(xs, lts, c=Ts, cmap=cmap, norm=norm,
                     s=sizes, zorder=3, marker="o",
                     edgecolors=DARK, linewidths=0.55, alpha=0.92,
                     label="_nolegend_")
-
-    # Guide-line through fixed-T points in T_set order
     ax.plot(xs, lts, ls="--", color=_COL_REF, lw=0.9, alpha=0.45, zorder=2)
 
-    # ── Named controllers: colour = T_run, size = j level ────────────────────
     for name, k in existing_results.items():
         st = _CTRL_MARKER.get(name)
         if st is None:
@@ -346,20 +394,19 @@ def _make_figure(fixed_T_results: list, existing_results: dict,
                    edgecolors=DARK, linewidths=0.7,
                    label="_nolegend_")
 
-    # ── Colorbar ──────────────────────────────────────────────────────────────
     cb = fig.colorbar(sc, ax=ax, shrink=0.88, pad=0.02)
-    cb.set_label(r"$T$ [$^\circ$C]", fontsize=10.5)
+    cb.set_label(r"$T$ [$^\circ$C]", fontsize=13)
 
-    # ── Axes ──────────────────────────────────────────────────────────────────
-    ax.set_xlabel(xlabel,                               fontsize=11)
-    ax.set_ylabel(r"Projected stack lifetime [yr]",     fontsize=11)
+    ax.set_xlabel(xlabel, fontsize=15)
+    ax.set_ylabel(r"Projected stack lifetime [yr]", fontsize=15)
     if x_invert:
-        ax.invert_xaxis()   # lower LCOH → right = better
+        ax.invert_xaxis()
 
-    # ── Legend — grey fill everywhere; colour read from temperature bar ─────────
+    # Subtitle with Ea value
+    ea_label = rf"$E_{{\mathrm{{a,eff}}}} = {ea_kJ:g}$ kJ/mol"
+    ax.set_title(ea_label, fontsize=13, pad=4)
+
     proxies = []
-
-    # Controller / fixed-T shape entries (all grey, uniform size)
     for name, _ in existing_results.items():
         st = _CTRL_MARKER.get(name)
         if st is None:
@@ -377,19 +424,144 @@ def _make_figure(fixed_T_results: list, existing_results: dict,
                       markeredgewidth=0.5, markersize=8,
                       label=r"Fixed-$T$")
     )
-    # Size encoding (low/med/high j) is described in the figure caption.
-
-    ax.legend(handles=proxies, fontsize=8.5, loc="lower right",
+    ax.legend(handles=proxies, fontsize=11, loc="lower right",
               framealpha=0.95, edgecolor=_COL_REF, borderpad=0.8,
               handletextpad=0.6)
 
     fig.tight_layout()
 
+    suffix = "" if ea_kJ == 55 else f"_Ea{ea_kJ:g}"
     for ext in (".pdf", ".png"):
-        out = REPO_ROOT / "results" / f"sensitivity_fixed_T_pareto_5yr{ext}"
+        out = REPO_ROOT / "results" / f"sensitivity_fixed_T_pareto_5yr{suffix}{ext}"
         fig.savefig(out, bbox_inches="tight", dpi=150)
         print(f"  Saved: {out.name}")
     plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Ea comparison table (LaTeX + stdout)
+# ---------------------------------------------------------------------------
+
+def _make_ea_comparison_table(all_ea: dict[float, tuple[list, dict]]) -> None:
+    """
+    Print a comparison table and save a LaTeX booktabs table.
+
+    all_ea : {ea_kJ: (fixed_T_results, existing_results)}
+    Rows   : each fixed-T setpoint, then each named controller.
+    Columns: Ea=26 | Ea=55 | Ea=70  each showing LCOH [EUR/kg] and lifetime [yr].
+    """
+    ea_vals = sorted(all_ea.keys())
+
+    # Collect all row keys in display order
+    ctrl_order = ["Load-following", "Price-aware", "Degradation-aware", "Lifetime-aware"]
+
+    # For each (ea, row) fetch lcoh and lifetime_yr
+    def _get(ea, T=None, ctrl=None):
+        fixed_rows, existing = all_ea[ea]
+        if T is not None:
+            for r in fixed_rows:
+                if r["T_set_C"] == T:
+                    return r["lcoh"], r["lifetime_yr"]
+            return float("nan"), float("nan")
+        if ctrl is not None:
+            k = existing.get(ctrl)
+            if k is None:
+                return float("nan"), float("nan")
+            return k["lcoh"], k["lifetime_yr"]
+
+    def _fmt_life(v):
+        if not np.isfinite(v):
+            return r"$>$99"
+        return f"{v:.1f}"
+
+    # ----- stdout table -----
+    col_w = 17
+    header1 = f"{'':28s}" + "".join(f"{'Ea='+str(int(e))+' kJ/mol':^{col_w}s}" for e in ea_vals)
+    header2 = f"{'':28s}" + "".join(f"{'LCOH':>7s}  {'Life':>6s}   " for _ in ea_vals)
+    sep     = "-" * (28 + col_w * len(ea_vals))
+    print(f"\n{'Ea sensitivity comparison':^{len(sep)}}")
+    print(sep)
+    print(header1)
+    print(header2)
+    print(sep)
+
+    def _print_row(label, T=None, ctrl=None):
+        cells = ""
+        for ea in ea_vals:
+            lcoh, lt = _get(ea, T=T, ctrl=ctrl)
+            lcoh_s = f"{lcoh:.2f}" if np.isfinite(lcoh) else "  n/a"
+            lt_s   = _fmt_life(lt)
+            cells += f"  {lcoh_s:>6s}  {lt_s:>5s}  "
+        print(f"  {label:<26s}{cells}")
+
+    print("  Fixed-T setpoints")
+    for T in FIXED_T_DEGC:
+        _print_row(f"  T = {T:g} °C", T=T)
+    print(sep)
+    print("  Named controllers")
+    for ctrl in ctrl_order:
+        _print_row(f"  {ctrl}", ctrl=ctrl)
+    print(sep)
+
+    # ----- LaTeX table -----
+    n_ea = len(ea_vals)
+    col_spec = "l" + "".join("rr" for _ in ea_vals)
+    ea_headers = " & ".join(
+        rf"\multicolumn{{2}}{{c}}{{$E_{{\mathrm{{a,eff}}}}={int(e)}\,\mathrm{{kJ/mol}}$}}"
+        for e in ea_vals
+    )
+    sub_header = " & ".join(
+        [r""] + [r"LCOH [\euro/kg] & Life [yr]"] * n_ea
+    )
+    cmidrules = " ".join(
+        rf"\cmidrule(lr){{{2 + 2*i}--{3 + 2*i}}}"
+        for i in range(n_ea)
+    )
+
+    def _latex_row(label, T=None, ctrl=None):
+        cells = []
+        for ea in ea_vals:
+            lcoh, lt = _get(ea, T=T, ctrl=ctrl)
+            lcoh_s = f"{lcoh:.2f}" if np.isfinite(lcoh) else r"\text{--}"
+            lt_s   = _fmt_life(lt) if np.isfinite(lt) else r"$>$99"
+            cells.append(f"{lcoh_s} & {lt_s}")
+        return f"  {label} & " + " & ".join(cells) + r" \\"
+
+    lines = [
+        r"\begin{table}[htbp]",
+        r"  \centering",
+        (r"  \caption{Fixed-$T$ Pareto sensitivity to activation energy $E_{\mathrm{a,eff}}$."
+         r" Each cell reports LCOH [\euro/kg$_{\mathrm{H_2}}$] and projected stack lifetime [yr]"
+         r" for the given $E_{\mathrm{a,eff}}$ value. Fixed-$T$ rows use the degradation-aware"
+         r" $j$-optimiser with temperature pinned; named controllers use the pre-computed"
+         r" 5-year runs (Ea = 55\,kJ/mol for the named controllers).}"),
+        r"  \label{tab:ea_sensitivity}",
+        r"  \small",
+        rf"  \begin{{tabular}}{{{col_spec}}}",
+        r"    \toprule",
+        f"    & {ea_headers} \\\\",
+        f"    {cmidrules}",
+        f"    {sub_header} \\\\",
+        r"    \midrule",
+        r"    \multicolumn{" + str(1 + 2*n_ea) + r"}{l}{\textit{Fixed-$T$ setpoints}} \\",
+    ]
+    for T in FIXED_T_DEGC:
+        lines.append(_latex_row(f"\\quad $T={T:g}\\,^\\circ$C", T=T))
+    lines += [
+        r"    \midrule",
+        r"    \multicolumn{" + str(1 + 2*n_ea) + r"}{l}{\textit{Named controllers}} \\",
+    ]
+    for ctrl in ctrl_order:
+        lines.append(_latex_row(f"\\quad {ctrl}", ctrl=ctrl))
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"\end{table}",
+    ]
+
+    tex_path = REPO_ROOT / "results" / "sensitivity_fixed_T_Ea_comparison_table.tex"
+    tex_path.write_text("\n".join(lines) + "\n")
+    print(f"\n  Saved LaTeX table: {tex_path.name}")
 
 
 # ---------------------------------------------------------------------------
@@ -402,68 +574,102 @@ def parse_args():
     p.add_argument("--plots-only", action="store_true", help="Skip simulations, plot only")
     p.add_argument("--only-T",     type=float, default=None,
                    help="Run only this temperature (°C)")
+    p.add_argument("--ea",         type=float, nargs="+", default=None,
+                   help="Ea values [kJ/mol] to run (default: all three: 26 55 70)")
     return p.parse_args()
 
 
 def main():
     args = parse_args()
 
-    plant     = load_plant(PLANT_CFG)
-    power_cfg = load_config(POWER_CFG)
-    price_cfg = load_config(PRICE_CFG)
+    ea_to_run = args.ea if args.ea is not None else EA_CASES
 
-    OUT_BASE.mkdir(parents=True, exist_ok=True)
+    base_plant = load_plant(PLANT_CFG)
+    power_cfg  = load_config(POWER_CFG)
+    price_cfg  = load_config(PRICE_CFG)
 
-    # --- Run simulations ---
+    # --- Run simulations for each Ea ---
     if args.run and not args.plots_only:
-        temps = [args.only_T] if args.only_T is not None else FIXED_T_DEGC
-        print(f"\nRunning {len(temps)} fixed-T simulations...")
-        for T in temps:
-            run_fixed_T(T, plant, power_cfg, price_cfg)
+        for ea in ea_to_run:
+            ob = _out_base(ea)
+            ob.mkdir(parents=True, exist_ok=True)
+            plant = _apply_ea(base_plant, ea)
+            temps = [args.only_T] if args.only_T is not None else FIXED_T_DEGC
+            print(f"\nEa = {ea:g} kJ/mol  →  {ob.name}")
+            # For non-base Ea values, also run a DA joint (j+T) simulation so the
+            # Pareto comparison is fair (all runs use the same Ea).
+            if ea != 55:
+                run_joint_da(plant, power_cfg, price_cfg, ob)
+            print(f"Running {len(temps)} fixed-T simulations...")
+            for T in temps:
+                run_fixed_T(T, plant, power_cfg, price_cfg, ob)
 
-    # --- Collect KPIs ---
-    fixed_T_results = []
-    for T in FIXED_T_DEGC:
-        name = f"fixedT_{T:g}C"
-        csv_path = OUT_BASE / name / f"{name}.csv"
-        if csv_path.exists():
-            k = kpis(csv_path)
-            k["T_set_C"] = T
-            k["label"]   = f"{T:g}$^\\circ$C"
-            fixed_T_results.append(k)
+    # --- Collect KPIs for all Ea values ---
+    all_ea: dict[float, tuple[list, dict]] = {}
+
+    for ea in EA_CASES:
+        ob = _out_base(ea)
+        fixed_T_results = []
+        for T in FIXED_T_DEGC:
+            name     = f"fixedT_{T:g}C"
+            csv_path = ob / name / f"{name}.csv"
+            if csv_path.exists():
+                k = kpis(csv_path)
+                k["T_set_C"] = T
+                k["label"]   = f"{T:g}$^\\circ$C"
+                fixed_T_results.append(k)
+            elif ea in ea_to_run:
+                print(f"  [missing] {csv_path} — run with --run first")
+
+        # For Ea=55: load all four controllers (full comparison figure).
+        # For Ea≠55: only load the Ea-specific DA joint run — LF/PA/LA are
+        # calibrated to Ea=55 and do not belong on a different-Ea Pareto plot.
+        existing_results = {}
+        if ea == 55:
+            for label, csv_path in EXISTING.items():
+                if csv_path.exists():
+                    existing_results[label] = kpis(csv_path)
+                elif ea == EA_CASES[0]:
+                    print(f"  [missing] {csv_path}")
         else:
-            print(f"  [missing] {csv_path} — run with --run first")
+            ea_specific = _out_base(ea) / "joint_da" / "joint_da.csv"
+            if ea_specific.exists():
+                existing_results["Degradation-aware"] = kpis(ea_specific)
+            else:
+                print(f"  [missing] joint_da for Ea={ea:g} — run with --run first")
 
-    existing_results = {}
-    for label, csv_path in EXISTING.items():
-        if csv_path.exists():
-            existing_results[label] = kpis(csv_path)
-        else:
-            print(f"  [missing] {csv_path}")
+        if fixed_T_results or existing_results:
+            all_ea[ea] = (fixed_T_results, existing_results)
 
-    if not fixed_T_results and not existing_results:
+    if not all_ea:
         print("No results found. Run with --run first.")
         return
 
-    # --- Print table ---
-    all_rows = []
-    for r in fixed_T_results:
-        all_rows.append(("Fixed T", r["label"], r["T_mean_C"], r["j_mean"],
-                          r["profit"], r["vdeg_mV"], r["lcoh"], r["lifetime_yr"]))
-    for label, k in existing_results.items():
-        all_rows.append(("Controller", label, k["T_mean_C"], k["j_mean"],
-                          k["profit"], k["vdeg_mV"], k["lcoh"], k["lifetime_yr"]))
+    # --- Per-Ea stdout tables and figures ---
+    for ea, (fixed_T_results, existing_results) in all_ea.items():
+        print(f"\n=== Ea = {ea:g} kJ/mol ===")
+        all_rows = []
+        for r in fixed_T_results:
+            all_rows.append(("Fixed T", r["label"], r["T_mean_C"], r["j_mean"],
+                              r["profit"], r["vdeg_mV"], r["lcoh"], r["lifetime_yr"]))
+        for label, k in existing_results.items():
+            all_rows.append(("Controller", label, k["T_mean_C"], k["j_mean"],
+                              k["profit"], k["vdeg_mV"], k["lcoh"], k["lifetime_yr"]))
 
-    print(f"\n{'Type':<12}  {'Name':<20}  {'T_mean':>7}  {'j_mean':>7}  "
-          f"{'Profit':>10}  {'V_deg':>8}  {'LCOH':>7}  {'Life':>6}")
-    print("-" * 92)
-    for row in sorted(all_rows, key=lambda x: x[5]):  # sort by degradation
-        life = f"{row[7]:.1f}" if row[7] < 99 else ">99"
-        print(f"{row[0]:<12}  {row[1]:<20}  {row[2]:>6.1f}C  {row[3]:>7.0f}  "
-              f"{row[4]:>+10.0f}  {row[5]:>7.2f} mV  {row[6]:>6.2f}  {life:>5} yr")
+        print(f"{'Type':<12}  {'Name':<20}  {'T_mean':>7}  {'j_mean':>7}  "
+              f"{'Profit':>10}  {'V_deg':>8}  {'LCOH':>7}  {'Life':>6}")
+        print("-" * 92)
+        for row in sorted(all_rows, key=lambda x: x[5]):
+            life = f"{row[7]:.1f}" if row[7] < 99 else ">99"
+            print(f"{row[0]:<12}  {row[1]:<20}  {row[2]:>6.1f}C  {row[3]:>7.0f}  "
+                  f"{row[4]:>+10.0f}  {row[5]:>7.2f} mV  {row[6]:>6.2f}  {life:>5} yr")
 
-    # --- Plot ---
-    _make_figure(fixed_T_results, existing_results, x_metric="lcoh")
+        if fixed_T_results:
+            _make_figure(fixed_T_results, existing_results, ea_kJ=ea, x_metric="lcoh")
+
+    # --- Cross-Ea comparison table ---
+    if len(all_ea) >= 2:
+        _make_ea_comparison_table(all_ea)
 
 
 if __name__ == "__main__":

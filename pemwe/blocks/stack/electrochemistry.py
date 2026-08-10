@@ -106,7 +106,7 @@ def electrochem_step(
 
     # Membrane properties for ohmic calculation
     mem_thickness_cm = float(th["mem_thickness_cm"])   # [cm]
-    lambda_min = float(wf["lambda_min"])               # [-] membrane hydration number
+    lam = float(wf["lambda"])                           # [-] membrane hydration number (Springer)
 
     # 1) Current
     # In a series stack: I_stack = j * A_cell (same current through all N_cells).
@@ -146,7 +146,7 @@ def electrochem_step(
     # Membrane conductivity correlation assuming hydrated Nafion membrane.
     # sigma_mem is in [S/cm], membrane thickness in [cm] and
     # current density in [A/cm^2].
-    sigma_mem_S_per_cm = (0.005139 * lambda_min - 0.00326) * math.exp(
+    sigma_mem_S_per_cm = (0.005139 * lam - 0.00326) * math.exp(
         1268.0 * (1.0 / 303.0 - 1.0 / T_stack_K)
     )
 

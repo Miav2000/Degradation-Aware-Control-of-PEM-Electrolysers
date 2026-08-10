@@ -108,7 +108,7 @@ ax.set_xlabel(r"Current density $j$ [A\,cm$^{-2}$]")
 ax.set_ylabel(r"Cell voltage $V_\mathrm{cell}$ [V]")
 ax.set_xlim(0, 2.0)
 ax.set_ylim(1.2, 2.15)
-ax.legend(fontsize=8.5, loc="upper left")
+ax.legend(fontsize=11, loc="upper left")
 fig1.tight_layout()
 fig1.savefig(OUTDIR / "val_fig1_polarization.pdf", bbox_inches="tight")
 fig1.savefig(OUTDIR / "val_fig1_polarization.png", bbox_inches="tight")
@@ -352,7 +352,7 @@ ax_T.axhline(plant["thermal"]["T_amb_K"] - 273.15,
 ax_T.set_xlabel(r"Time [h]")
 ax_T.set_ylabel(r"$T_\mathrm{stack}$ [$^\circ$C]")
 ax_T.set_title(r"Temperature response to current step")
-ax_T.legend(fontsize=9)
+ax_T.legend(fontsize=11)
 
 # Right: heat flows vs time for j=1.0 A/cm²
 ax_Q = axes2[1]
@@ -370,7 +370,7 @@ ax_Q.axhline(0, color=GREY, lw=0.6)
 ax_Q.set_xlabel(r"Time [h]")
 ax_Q.set_ylabel(r"Heat flow [kW]")
 ax_Q.set_title(r"Heat flows at $j=1.0\,\mathrm{A\,cm}^{-2}$")
-ax_Q.legend(fontsize=9)
+ax_Q.legend(fontsize=11)
 
 fig2.tight_layout()
 fig2.savefig(OUTDIR / "val_fig2_thermal_step.pdf", bbox_inches="tight")

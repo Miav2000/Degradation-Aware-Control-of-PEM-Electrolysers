@@ -1,19 +1,15 @@
 """
 sensitivity_tornado.py — OAT sensitivity analysis with parallel execution.
 
-Varies four parameters one-at-a-time (low / base / high), runs both the aware
-and commercial controllers for each case, and produces two tornado plots:
+Varies four parameters one-at-a-time (low / base / high), runs DA for each case, and produces two tornado plots:
   sa_tornado_lcoh.pdf/.png      — LCOH [EUR/kg]
   sa_tornado_lifetime.pdf/.png  — Projected stack lifetime [yr]
 
-All 24 cases (4 params × 3 levels × 2 controllers) run in parallel.
-Completed cases are cached as CSVs and skipped on re-runs.
-
 Usage:
-    python run/sensitivity/sensitivity_tornado.py
-    python run/sensitivity/sensitivity_tornado.py --workers 8
-    nohup python run/sensitivity/sensitivity_tornado.py \
-        > results/sensitivity_tornado/run.log 2>&1 &
+    python3 run/sensitivity/sensitivity_tornado.py
+    python3 run/sensitivity/sensitivity_tornado.py --workers 9
+    nohup python3 run/sensitivity/sensitivity_tornado.py --workers 9 \
+    > results/sensitivity_tornado/run.log 2>&1 &
 """
 from __future__ import annotations
 
@@ -83,13 +79,23 @@ PARAMS: list[dict] = [
     },
     {
         "key":    "spot_price",
-        "label":  r"$p_{\mathrm{elec}}$ scale [-]",
+        "label":  r"$s_{\mathrm{elec}}$ [-]",
         "values": [0.75, 1.0, 1.25],            # ±25 % on price series
     },
     {
         "key":    "wind",
-        "label":  r"$P_{\mathrm{avail}}$ scale [-]",
+        "label":  r"$s_{\mathrm{wind}}$ [-]",
         "values": [0.75, 1.0, 1.25],            # ±25 % on available power series
+    },
+    {
+        "key":    "EOL",
+        "label":  r"$V_{\mathrm{EOL}}$ [mV]",
+        "values": [75, 100, 125],            # ±25 %
+    },
+    {
+        "key":    "T_set_K",
+        "label":  r"$T_{\mathrm{set}}$ [$^\circ$C]",
+        "values": [45, 60, 75],              # ±25 % of 60 °C baseline
     },
 ]
 
@@ -121,6 +127,10 @@ def _apply_param(plant: dict, key: str, val: float) -> None:
         pass  # post-hoc only — no effect on simulation physics
     elif key in ("spot_price", "wind"):
         pass  # applied as series scale in _run_case
+    elif key == "EOL":
+        plant["degradation"]["V_deg_EOL_V"] = val / 1000.0   # mV → V
+    elif key == "T_set_K":
+        plant["water_feed"]["T_set_K"] = val + 273.15         # °C → K
     else:
         raise ValueError(f"Unknown sensitivity parameter key: {key!r}")
 
@@ -298,6 +308,8 @@ def _build_cases(base_plant: dict, dt_h: float, n_steps: int) -> list[dict]:
                 if param["key"] in ("c_shutdown", "system_capex"):
                     # Point to the capex-base CSV (same simulation, only accounting differs)
                     entry["baseline_csv"] = str(OUTDIR / f"sa_capex_base_{ctrl_name}.csv")
+                if param["key"] == "EOL":
+                    entry["V_EOL"] = val / 1000.0   # mV → V; also applied to plant in _apply_param
                 cases.append(entry)
 
     return cases

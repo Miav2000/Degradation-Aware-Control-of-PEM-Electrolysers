@@ -185,7 +185,7 @@ def fig_dynamic_zoom(df, name, outdir):
 
     _LW  = 1.8   # main line width
     _LW2 = 2.2   # emphasis line width
-    _FS  = 20    # axis label / legend font size
+    _FS  = 24    # axis label / legend font size
 
     fig, axes = plt.subplots(6, 1, figsize=(13, 15), sharex=True)
 
@@ -529,7 +529,7 @@ def fig_degradation(df, name, outdir):
     axes[2].plot(t_pr/8760,r_ann/8760*t_pr,color=RED,lw=1.0,ls="--",label="Linear extrapolation")
     axes[2].axhline(V_DEG_EOL_MV,color=GREY,lw=0.8,ls=":",label=f"EOL = {V_DEG_EOL_MV:.0f} mV")
     axes[2].set_xlabel("Years"); axes[2].set_ylabel(r"$V_\mathrm{deg}$ [mV]")
-    axes[2].set_title(rf"Cal.\ lifetime: {life_cal_yr:.1f} yr  $|$  Op.\ lifetime: {life_op_kh:.0f} kh$_{{\rm op}}$  ({rate_op:.2f} $\mu$V/op.h)"); axes[2].legend(fontsize=8)
+    axes[2].set_title(rf"Cal.\ lifetime: {life_cal_yr:.1f} yr  $|$  Op.\ lifetime: {life_op_kh:.0f} kh$_{{\rm op}}$  ({rate_op:.2f} $\mu$V/op.h)"); axes[2].legend(fontsize=11)
 
     fig.tight_layout(); savefig(fig,outdir/f"{name}_fig5_degradation.png"); return fig
 
@@ -1137,9 +1137,9 @@ def fig_distributions(db, dc, da, de=None, outdir=None):
     _rc_keys = ["font.size","axes.titlesize","axes.labelsize",
                 "xtick.labelsize","ytick.labelsize","legend.fontsize"]
     _saved_rc = {k: matplotlib.rcParams[k] for k in _rc_keys}
-    matplotlib.rcParams.update({"font.size": 15, "axes.titlesize": 16,
-                                 "axes.labelsize": 15, "xtick.labelsize": 14,
-                                 "ytick.labelsize": 14, "legend.fontsize": 12})
+    matplotlib.rcParams.update({"font.size": 18, "axes.titlesize": 18,
+                                 "axes.labelsize": 18, "xtick.labelsize": 16,
+                                 "ytick.labelsize": 16, "legend.fontsize": 14})
     fig, axes = plt.subplots(2, 3, figsize=(19, 12))
 
     # Active-hour masks

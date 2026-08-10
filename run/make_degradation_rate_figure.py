@@ -104,7 +104,7 @@ def main() -> None:
     ax.set_ylabel(r"Degradation rate $\dot{V}_\mathrm{deg}$ [$\mu$V\,h$^{-1}$]")
     ax.set_xlim(0.0, J_MAX_Acm2 * 1.05)
     ax.set_ylim(bottom=0.0)
-    ax.legend(fontsize=8.5, loc="upper left")
+    ax.legend(fontsize=11, loc="upper left")
 
     fig.tight_layout()
 

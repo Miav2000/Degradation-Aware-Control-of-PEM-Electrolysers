@@ -94,7 +94,8 @@ water_feed:
   T_set_K: 333.15               # [K]  heater setpoint (60 degC) -- preheat mix to this if below
 
   # No-starvation and physical bounds
-  lambda_min: 20.0               # [-] minimum stoichiometric excess to avoid starvation (PEMWE book sufficient hydration)
+  lambda: 20.0                   # [-] membrane hydration number (Springer conductivity equation)
+  nu_w: 20.0                     # [-] excess water ratio multiplier (stoichiometric excess to avoid starvation)
   m_dot_max_kg_s: 3.5           # [kg/s]
 
   # Actuator dynamics   (with 40 substeps, this is neglicble but included for completeness and future use)
